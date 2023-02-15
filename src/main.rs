@@ -1,14 +1,9 @@
+use std::env;
+use dotenv::dotenv;
 use std::collections::HashMap;
 use reqwest::Client;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
-
-
-const CLIENT_ID: &str = "a288ad6e4e1646a79b0c52bd43d34881";
-const CLIENT_SECRET: &str = "7de880b72a1d4087ae383a19cfb01292";
-
-// To send an auth request I need to hit: https://accounts.spotify.com/api/token
-// Check this page for more details - https://developer.spotify.com/documentation/general/guides/authorization/client-credentials/
 
 #[derive(Serialize, Deserialize)]
 struct AuthResponseBody {
@@ -17,12 +12,17 @@ struct AuthResponseBody {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    dotenv().ok();
+
+    let client_id: String = env::var("CLIENT_ID").unwrap();
+    let client_secret: String = env::var("CLIENT_SECRET").unwrap();
+
     let client = reqwest::Client::new();
 
     let mut form = HashMap::new();
     form.insert("grant_type", "client_credentials");
 
-    let auth_token = get_auth_token(&client).await?;
+    let auth_token = get_auth_token(&client, client_id, client_secret).await?;
 
     let top_artist_id = get_top_artist_id("BeyondTheBlack", &client, &auth_token).await?;
 
@@ -70,13 +70,13 @@ async fn get_top_artist_id(artist_name: &str, client: &Client, auth_token: &str)
     return Ok(top_artist_id);
 }
 
-async fn get_auth_token(client: &Client) -> Result<String, reqwest::Error> {
+async fn get_auth_token(client: &Client, client_id: String, client_secret: String) -> Result<String, reqwest::Error> {
     let mut form = HashMap::new();
     form.insert("grant_type", "client_credentials");
 
     let auth_res: AuthResponseBody = client
         .request(reqwest::Method::POST, "https://accounts.spotify.com/api/token")
-        .basic_auth(CLIENT_ID, Some(CLIENT_SECRET))
+        .basic_auth(client_id, Some(client_secret))
         .form(&form)
         .send()
         .await?

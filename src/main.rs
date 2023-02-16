@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use reqwest::Client;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
+use urlencoding::encode;
 
 #[derive(Serialize, Deserialize)]
 struct AuthResponseBody {
@@ -24,7 +25,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let auth_token = get_auth_token(&client, client_id, client_secret).await?;
 
-    let top_artist_id = get_top_artist_id("BeyondTheBlack", &client, &auth_token).await?;
+    let top_artist_id = get_top_artist_id(encode("Beyond The Black").to_string(), &client, &auth_token).await?;
 
     let artist_albums = get_albums_by_artist_id(&top_artist_id, &client, &auth_token).await?;
 
@@ -45,9 +46,9 @@ async fn get_albums_by_artist_id(id: &str, client: &Client, auth_token: &str) ->
     return Ok(artist_albums);
 }
 
-async fn get_top_artist_id(artist_name: &str, client: &Client, auth_token: &str) -> Result<String, reqwest::Error> {
+async fn get_top_artist_id(artist_name: String, client: &Client, auth_token: &str) -> Result<String, reqwest::Error> {
     let query_res = client
-        .request(reqwest::Method::GET, "https://api.spotify.com/v1/search?type=artist&q=".to_owned() + artist_name)
+        .request(reqwest::Method::GET, "https://api.spotify.com/v1/search?type=artist&q=".to_owned() + &artist_name)
         .bearer_auth(&auth_token)
         .send()
         .await?

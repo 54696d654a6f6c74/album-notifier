@@ -5,6 +5,7 @@ use reqwest::Client;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use urlencoding::encode;
+use std::fs;
 
 #[derive(Serialize, Deserialize)]
 struct AuthResponseBody {
@@ -18,18 +19,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client_id: String = env::var("CLIENT_ID").unwrap();
     let client_secret: String = env::var("CLIENT_SECRET").unwrap();
 
-    let client = reqwest::Client::new();
+    let bandlist = fs::read_to_string("./bands").expect("Could not find a bandlist file");
+    let bands = bandlist.split("\n");
 
-    let mut form = HashMap::new();
-    form.insert("grant_type", "client_credentials");
+    for band in bands {
+        let client = reqwest::Client::new();
 
-    let auth_token = get_auth_token(&client, client_id, client_secret).await?;
+        let mut form = HashMap::new();
+        form.insert("grant_type", "client_credentials");
 
-    let top_artist_id = get_top_artist_id(encode("Beyond The Black").to_string(), &client, &auth_token).await?;
+        let auth_token = get_auth_token(&client, &client_id, &client_secret).await?;
 
-    let artist_albums = get_albums_by_artist_id(&top_artist_id, &client, &auth_token).await?;
+        let top_artist_id = get_top_artist_id(encode(band).to_string(), &client, &auth_token).await?;
 
-    return Ok(print_artist_albums(&artist_albums));
+        let artist_albums = get_albums_by_artist_id(&top_artist_id, &client, &auth_token).await?;
+
+        print_artist_albums(&artist_albums)
+    }
+
+    return Ok(());
 }
 
 async fn get_albums_by_artist_id(id: &str, client: &Client, auth_token: &str) -> Result<Vec<Value>, reqwest::Error> {
@@ -71,7 +79,7 @@ async fn get_top_artist_id(artist_name: String, client: &Client, auth_token: &st
     return Ok(top_artist_id);
 }
 
-async fn get_auth_token(client: &Client, client_id: String, client_secret: String) -> Result<String, reqwest::Error> {
+async fn get_auth_token(client: &Client, client_id: &str, client_secret: &str) -> Result<String, reqwest::Error> {
     let mut form = HashMap::new();
     form.insert("grant_type", "client_credentials");
 

@@ -1,4 +1,5 @@
 use dotenv::dotenv;
+use models::Album::Album;
 use models::Artist::Artist;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -25,6 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client_secret: String = env::var("CLIENT_SECRET").unwrap();
 
     let client = reqwest::Client::new();
+    
     let auth_token = get_auth_token(&client, &client_id, &client_secret).await?;
 
     for band in get_bands() {
@@ -42,17 +44,12 @@ async fn get_artist_albums(
 ) -> Result<Vec<Album>, reqwest::Error> {
     let top_artist_id = get_top_artist_id(encode(&band).to_string(), &client, &auth_token).await?;
 
-    return Ok::<Vec<Value>, reqwest::Error>(
-        get_albums_by_artist_id(&top_artist_id, &client, &auth_token).await?,
-    );
+    return get_albums_by_artist_id(&top_artist_id, &client, &auth_token).await;
 }
 
-fn getLatestAlbum(albums: &Vec<Value>) {
-    let latest = albums[0].get("name").unwrap().as_str().unwrap();
-
+fn print_latest_album(albums: &Vec<Album>) {
     for i in 0..albums.len() {
-        let album_name = albums[i].get("name").unwrap().as_str().unwrap();
-        println!("{:#?}", album_name);
+        println!("{:#?}", albums[i].name);
     }
 }
 
@@ -60,7 +57,7 @@ async fn get_albums_by_artist_id(
     id: &str,
     client: &Client,
     auth_token: &str,
-) -> Result<Vec<Value>, reqwest::Error> {
+) -> Result<Vec<Album>, reqwest::Error> {
     let query_res = client
         .request(
             reqwest::Method::GET,
@@ -69,15 +66,10 @@ async fn get_albums_by_artist_id(
         .bearer_auth(&auth_token)
         .send()
         .await?
-        .json::<serde_json::Value>()
+        .json::<Artist>()
         .await?;
 
-    let artist_albums = query_res
-        .get("items")
-        .unwrap()
-        .as_array()
-        .unwrap()
-        .to_owned();
+    let artist_albums: Vec<Album> = query_res.items.unwrap();
 
     return Ok(artist_albums);
 }
@@ -138,10 +130,9 @@ async fn get_auth_token(
     return Ok(auth_res.access_token);
 }
 
-fn print_artist_albums(artist_albums: &Vec<Value>) {
+fn print_artist_albums(artist_albums: &Vec<Album>) {
     for album in artist_albums {
-        let album_name = album.get("name").unwrap().as_str().unwrap();
-        println!("{:#?}", album_name);
+        println!("{}", album.name);
     }
 }
 

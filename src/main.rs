@@ -3,7 +3,6 @@ use models::Album::Album;
 use models::Artist::Artist;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::collections::HashMap;
 use std::env;
 use std::fs;
@@ -31,7 +30,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for band in get_bands() {
         let albums = &get_artist_albums(&client, &auth_token, &band).await?;
+        print!("All: ");
         print_artist_albums(albums);
+
+        println!("Latest: {}", albums[0].name);
     }
 
     return Ok(());
@@ -45,12 +47,6 @@ async fn get_artist_albums(
     let top_artist_id = get_top_artist_id(encode(&band).to_string(), &client, &auth_token).await?;
 
     return get_albums_by_artist_id(&top_artist_id, &client, &auth_token).await;
-}
-
-fn print_latest_album(albums: &Vec<Album>) {
-    for i in 0..albums.len() {
-        println!("{:#?}", albums[i].name);
-    }
 }
 
 async fn get_albums_by_artist_id(

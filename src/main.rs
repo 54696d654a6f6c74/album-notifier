@@ -32,6 +32,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for band in get_bands() {
         let albums = &get_artist_albums(&client, &auth_token, &band).await?;
+        
+        match database.get_by_band_name(&band) {
+            Some(entry) => {
+                if !entry.name.eq(&albums[0].name) {
+                    println!("New album - {} found for band - {}", &albums[0].name, band);
+                };
+            },
+            None => ()
+        }
+
         database.insert(EntryShape {name: albums[0].name.to_owned(), band, timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis()})
     }
 

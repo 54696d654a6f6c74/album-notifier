@@ -1,6 +1,6 @@
 use std::fs::OpenOptions;
-use std::{fs::File, io::Read, path::Path};
-use std::io::{prelude::*, SeekFrom};
+use std::io::{Seek, Write};
+use std::{io::Read, path::Path};
 
 use serde::{Deserialize, Serialize};
 
@@ -11,12 +11,12 @@ pub struct EntryShape {
     pub timestamp: u128
 }
 
-pub struct Db {
+pub struct Db<'a> {
     data: Vec<EntryShape>,
-    db_path: Path
+    db_path: &'a Path
 }
 
-impl Db {
+impl Db<'_> {
     pub fn new(db_path: &Path) -> Db {
         let mut file = match OpenOptions::new()
             .write(true)
@@ -29,6 +29,7 @@ impl Db {
             };
 
         let mut raw_data = String::new();
+        
         match file.read_to_string(&mut raw_data) {
             Err(why) => {println!("failed to read {}: {}\n defaulting to empty file", db_path.display(), why); raw_data = String::from("[]\n");},
             Ok(_) => ()
@@ -39,15 +40,6 @@ impl Db {
             Ok(data) => data
         };
 
-        file = match OpenOptions::new()
-            .write(true)
-            .truncate(truncate)
-            .create(true)
-            .open(db_path)
-            {
-                Err(why) => panic!("couldn't open {}: {}", db_path.display(), why),
-                Ok(file) => file,
-            };
 
         return Db {
             data,
@@ -55,37 +47,37 @@ impl Db {
         };
     }
 
-    fn read(&self) {
-
-    }
-
     pub fn insert(&mut self, entry: EntryShape) {
-        let x = EntryShape {
-            name: String::from("a"),
-            band: String::from("b"),
-            timestamp: 123
-        };
-
         match self.data.iter_mut().find(|e| e.band == entry.band) {
-            Some(old_entry) => *old_entry = x,
+            Some(old_entry) => *old_entry = entry,
             None => self.data.push(entry)
         };
     }
 
     pub fn commit(&mut self) {
+        let mut db = match OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .create(true)
+            .open(self.db_path)
+            {
+                Err(why) => panic!("couldn't open {}: {}", self.db_path.display(), why),
+                Ok(file) => file,
+            };
+
         let raw_data = match serde_json::to_string_pretty(&self.data) {
             Err(why) => panic!("failed to convert data to string {:#?}: {}", self.data, why),
             Ok(str_json) => str_json
         };
 
-        match self.db.seek(SeekFrom::Start(0)) {
+        match db.rewind() {
             Err(why) => panic!("failed to flush DB before write: {}", why),
             Ok(_) => ()
         };
 
         println!("{}", raw_data);
 
-        match self.db.write_all(raw_data.as_bytes()) {
+        match db.write_all(raw_data.as_bytes()) {
             Err(why) => panic!("failed to write into DB file: {}", why),
             Ok(_) => ()
         };

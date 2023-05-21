@@ -18,7 +18,7 @@ pub struct Db<'a> {
 
 impl Db<'_> {
     pub fn new(db_path: &Path) -> Db {
-        let mut file = Self::get_read_db(&db_path);
+        let file = Self::get_read_db(&db_path);
         let data = Self::get_db_data(&file);
 
         return Db {

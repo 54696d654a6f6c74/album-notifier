@@ -1,21 +1,21 @@
 use dotenv::dotenv;
-use models::Album::Album;
-use models::Artist::Artist;
+use models::album::Album;
+use models::artist::Artist;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::env;
 use std::fs;
+use std::path::Path;
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
 use urlencoding::encode;
 
+use crate::db::EntryShape;
+
 mod db;
-mod model;
 mod models;
 
-#[derive(Serialize, Deserialize)]
-struct AuthResponseBody {
-    access_token: String,
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -28,13 +28,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     let auth_token = get_auth_token(&client, &client_id, &client_secret).await?;
 
+    let mut database = db::Db::new(Path::new("./album_history.json"));
+
     for band in get_bands() {
         let albums = &get_artist_albums(&client, &auth_token, &band).await?;
-        print!("All: ");
-        print_artist_albums(albums);
-
-        println!("Latest: {}", albums[0].name);
+        database.insert(EntryShape {name: albums[0].name.to_owned(), band, timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis()})
     }
+
+    database.commit();
 
     return Ok(());
 }
@@ -54,7 +55,12 @@ async fn get_albums_by_artist_id(
     client: &Client,
     auth_token: &str,
 ) -> Result<Vec<Album>, reqwest::Error> {
-    let query_res = client
+    #[derive(Deserialize)]
+    struct ResBody {
+        items: Vec<Album>
+    }
+
+    let query_res: ResBody = client
         .request(
             reqwest::Method::GET,
             "https://api.spotify.com/v1/artists/".to_owned() + id + "/albums",
@@ -62,10 +68,10 @@ async fn get_albums_by_artist_id(
         .bearer_auth(&auth_token)
         .send()
         .await?
-        .json::<Artist>()
+        .json()
         .await?;
 
-    let artist_albums: Vec<Album> = query_res.items.unwrap();
+    let artist_albums: Vec<Album> = query_res.items;
 
     return Ok(artist_albums);
 }
@@ -108,10 +114,15 @@ async fn get_auth_token(
     client_id: &str,
     client_secret: &str,
 ) -> Result<String, reqwest::Error> {
+    #[derive(Serialize, Deserialize)]
+    struct ResBody {
+        access_token: String,
+    }
+
     let mut form = HashMap::new();
     form.insert("grant_type", "client_credentials");
 
-    let auth_res: AuthResponseBody = client
+    let auth_res: ResBody = client
         .request(
             reqwest::Method::POST,
             "https://accounts.spotify.com/api/token",
@@ -124,12 +135,6 @@ async fn get_auth_token(
         .await?;
 
     return Ok(auth_res.access_token);
-}
-
-fn print_artist_albums(artist_albums: &Vec<Album>) {
-    for album in artist_albums {
-        println!("{}", album.name);
-    }
 }
 
 fn get_bands() -> Vec<String> {

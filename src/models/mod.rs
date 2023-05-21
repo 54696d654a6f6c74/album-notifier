@@ -1,2 +1,2 @@
-pub mod Album;
-pub mod Artist;
+pub mod album;
+pub mod artist;

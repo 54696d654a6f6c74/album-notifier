@@ -1,8 +1,8 @@
 use serde::Deserialize;
 
-use crate::models::Album::Album;
+use crate::models::album::Album;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Artist {
     pub id: String,
     pub items: Option<Vec<Album>>,

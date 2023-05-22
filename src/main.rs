@@ -24,20 +24,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut database = db::Db::new(Path::new("./album_history.json"));
 
-    for band in get_bands() {
-        let albums = &services::spotify::get_artist_albums(&client, &auth_token, &band).await?;
+    for artist in get_artists() {
+        let albums = &services::spotify::get_artist_albums(&client, &auth_token, &artist).await?;
 
         // Spotify always returns the albums in desc order of release date
         let latest_album = &albums[0];
 
-        match database.get_by_band_name(&band) {
+        match database.get_by_artist_name(&artist) {
             Some(entry) => {
                 if !entry.name.eq(&albums[0].name) {
                     println!(
-                        "New album - {} found for band - {}",
-                        &latest_album.name, band
+                        "New album - {} found for artist - {}",
+                        &latest_album.name, artist
                     );
-                    services::toast::new_album(&band, &latest_album.name);
+                    services::toast::new_album(&artist, &latest_album.name);
                 };
             }
             None => (),
@@ -45,7 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         database.insert(EntryShape {
             name: latest_album.name.to_owned(),
-            band,
+            artist,
             timestamp: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
@@ -58,9 +58,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     return Ok(());
 }
 
-fn get_bands() -> Vec<String> {
-    let bandlist = fs::read_to_string("./bands")
-        .expect("Could not find a bandlist file")
+fn get_artists() -> Vec<String> {
+    let artist_list = fs::read_to_string("./artists")
+        .expect("Could not find a artist list file")
         .clone();
-    return bandlist.split("\n").map(String::from).collect();
+    return artist_list.split("\n").map(String::from).collect();
 }

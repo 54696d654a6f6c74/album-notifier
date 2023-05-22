@@ -9,9 +9,10 @@ use crate::models::artist::Artist;
 pub async fn get_artist_albums(
     client: &Client,
     auth_token: &str,
-    band: &str,
+    artist: &str,
 ) -> Result<Vec<Album>, reqwest::Error> {
-    let top_artist_id = get_top_artist_id(encode(&band).to_string(), &client, &auth_token).await?;
+    let top_artist_id =
+        get_top_artist_id(encode(&artist).to_string(), &client, &auth_token).await?;
 
     return get_albums_by_artist_id(&top_artist_id, &client, &auth_token).await;
 }

@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EntryShape {
     pub name: String,
-    pub band: String,
+    pub artist: String,
     pub timestamp: u128,
 }
 
@@ -24,8 +24,8 @@ impl Db<'_> {
         return Db { data, db_path };
     }
 
-    pub fn get_by_band_name(&self, band_name: &str) -> Option<&EntryShape> {
-        self.data.iter().find(|e| e.band == band_name)
+    pub fn get_by_artist_name(&self, artist_name: &str) -> Option<&EntryShape> {
+        self.data.iter().find(|e| e.artist == artist_name)
     }
 
     fn get_db_data(mut db: &File) -> Vec<EntryShape> {
@@ -64,7 +64,7 @@ impl Db<'_> {
     }
 
     pub fn insert(&mut self, entry: EntryShape) {
-        match self.data.iter_mut().find(|e| e.band == entry.band) {
+        match self.data.iter_mut().find(|e| e.artist == entry.artist) {
             Some(old_entry) => *old_entry = entry,
             None => self.data.push(entry),
         };

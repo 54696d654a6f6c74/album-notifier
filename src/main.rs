@@ -26,6 +26,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for band in get_bands() {
         let albums = &services::spotify::get_artist_albums(&client, &auth_token, &band).await?;
+
+        // Spotify always returns the albums in desc order of release date
         let latest_album = &albums[0];
 
         match database.get_by_band_name(&band) {

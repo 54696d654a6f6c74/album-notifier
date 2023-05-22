@@ -15,8 +15,11 @@ mod services;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
 
-    let client_id: String = env::var("CLIENT_ID").unwrap();
-    let client_secret: String = env::var("CLIENT_SECRET").unwrap();
+    let client_id: String = env::var("CLIENT_ID").expect("env var `CLIENT_ID` is not set");
+    let client_secret: String =
+        env::var("CLIENT_SECRET").expect("env var `CLIENT_SECRET` is not set");
+    let artist_list_path: String =
+        env::var("ARTIST_LIST_PATH").expect("env var `ARTIST_LIST_PATH` is not set");
 
     let client = reqwest::Client::new();
 
@@ -24,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut database = db::Db::new(Path::new("./album_history.json"));
 
-    for artist in get_artists() {
+    for artist in get_artists(&artist_list_path) {
         let albums = &services::spotify::get_artist_albums(&client, &auth_token, &artist).await?;
 
         // Spotify always returns the albums in desc order of release date
@@ -58,9 +61,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     return Ok(());
 }
 
-fn get_artists() -> Vec<String> {
-    let artist_list = fs::read_to_string("./artists")
-        .expect("Could not find a artist list file")
+fn get_artists(path: &str) -> Vec<String> {
+    let artist_list = fs::read_to_string(path)
+        .expect("Could not find the artist list file")
         .clone();
     return artist_list.split("\n").map(String::from).collect();
 }

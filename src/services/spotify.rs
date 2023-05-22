@@ -1,7 +1,7 @@
 use reqwest::Client;
-use urlencoding::encode;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use urlencoding::encode;
 
 use crate::models::album::Album;
 use crate::models::artist::Artist;
@@ -23,7 +23,7 @@ async fn get_albums_by_artist_id(
 ) -> Result<Vec<Album>, reqwest::Error> {
     #[derive(Deserialize)]
     struct ResBody {
-        items: Vec<Album>
+        items: Vec<Album>,
     }
 
     let query_res: ResBody = client

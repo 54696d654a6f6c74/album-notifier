@@ -11,7 +11,6 @@ mod db;
 mod models;
 mod services;
 
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
@@ -20,7 +19,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client_secret: String = env::var("CLIENT_SECRET").unwrap();
 
     let client = reqwest::Client::new();
-    
+
     let auth_token = services::spotify::get_auth_token(&client, &client_id, &client_secret).await?;
 
     let mut database = db::Db::new(Path::new("./album_history.json"));
@@ -28,17 +27,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for band in get_bands() {
         let albums = &services::spotify::get_artist_albums(&client, &auth_token, &band).await?;
         let latest_album = &albums[0];
-        
+
         match database.get_by_band_name(&band) {
             Some(entry) => {
                 if !entry.name.eq(&albums[0].name) {
-                    println!("New album - {} found for band - {}", &latest_album.name, band);
+                    println!(
+                        "New album - {} found for band - {}",
+                        &latest_album.name, band
+                    );
                 };
-            },
-            None => ()
+            }
+            None => (),
         }
 
-        database.insert(EntryShape {name: latest_album.name.to_owned(), band, timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis()})
+        database.insert(EntryShape {
+            name: latest_album.name.to_owned(),
+            band,
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis(),
+        })
     }
 
     database.commit();

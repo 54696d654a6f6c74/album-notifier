@@ -35,6 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         "New album - {} found for band - {}",
                         &latest_album.name, band
                     );
+                    services::toast::new_album(&band, &latest_album.name);
                 };
             }
             None => (),

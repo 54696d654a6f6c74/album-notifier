@@ -1,8 +1,4 @@
 {
-    "cSpell.words": [
-        "bandlist",
-        "dotenv",
-        "reqwest",
-        "urlencoding"
-    ]
+  "cSpell.words": ["bandlist", "dotenv", "reqwest", "urlencoding"],
+  "rust-analyzer.linkedProjects": ["./Cargo.toml"]
 }

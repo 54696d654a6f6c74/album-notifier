@@ -12,20 +12,21 @@ pub struct EntryShape {
 }
 
 pub struct Db<'a> {
-    data: Vec<EntryShape>,
+    old_data: Vec<EntryShape>,
+    new_data: Vec<EntryShape>,
     db_path: &'a Path,
 }
 
 impl Db<'_> {
     pub fn new(db_path: &Path) -> Db {
-        let file = Self::get_read_db(&db_path);
+        let file = Self::get_readable_db_file(&db_path);
         let data = Self::get_db_data(&file);
 
-        return Db { data, db_path };
+        return Db { old_data: data, db_path, new_data: vec![] };
     }
 
     pub fn get_by_artist_name(&self, artist_name: &str) -> Option<&EntryShape> {
-        self.data.iter().find(|e| e.artist == artist_name)
+        self.old_data.iter().find(|e| e.artist == artist_name)
     }
 
     fn get_db_data(mut db: &File) -> Vec<EntryShape> {
@@ -51,7 +52,7 @@ impl Db<'_> {
         }
     }
 
-    fn get_read_db(path: &Path) -> File {
+    fn get_readable_db_file(path: &Path) -> File {
         match OpenOptions::new()
             .write(true)
             .create(true)
@@ -64,9 +65,9 @@ impl Db<'_> {
     }
 
     pub fn insert(&mut self, entry: EntryShape) {
-        match self.data.iter_mut().find(|e| e.artist == entry.artist) {
+        match self.new_data.iter_mut().find(|e| e.artist == entry.artist) {
             Some(old_entry) => *old_entry = entry,
-            None => self.data.push(entry),
+            None => self.new_data.push(entry),
         };
     }
 
@@ -81,13 +82,13 @@ impl Db<'_> {
             Ok(file) => file,
         };
 
-        let raw_data = match serde_json::to_string_pretty(&self.data) {
-            Err(why) => panic!("failed to convert data to string {:#?}: {}", self.data, why),
+        let raw_data = match serde_json::to_string_pretty(&self.new_data) {
+            Err(why) => panic!("failed to convert data to string {:#?}: {}", self.new_data, why),
             Ok(str_json) => str_json,
         };
 
         match db.rewind() {
-            Err(why) => panic!("failed to flush DB before write: {}", why),
+            Err(why) => panic!("failed to rewind DB before write: {}", why),
             Ok(_) => (),
         };
 

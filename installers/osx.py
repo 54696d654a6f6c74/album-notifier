@@ -1,2 +1,2 @@
 def install():
-    print("Hello")
+    print("Unsupported OS")

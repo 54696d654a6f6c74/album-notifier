@@ -1,2 +1,2 @@
 def install():
-    pass
+    println("Unsupported OS")

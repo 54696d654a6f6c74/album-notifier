@@ -2,3 +2,4 @@
 album_history.json
 .env
 artists
+__pycache__

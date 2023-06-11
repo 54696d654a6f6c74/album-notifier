@@ -1,10 +1,10 @@
 extern crate cronjob;
 
+use cronjob::CronJob;
 use dotenv::dotenv;
 use std::env;
 use std::fs;
 use std::path::Path;
-use cronjob::CronJob;
 
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
@@ -34,12 +34,18 @@ fn run(_: &str) {
 
     let client = reqwest::blocking::Client::new();
 
-    let auth_token = services::spotify::get_auth_token(&client, &client_id, &client_secret).expect("Failed to get auth token");
+    let auth_token = services::spotify::get_auth_token(&client, &client_id, &client_secret)
+        .expect("Failed to get auth token");
 
     let mut database = db::Db::new(Path::new("./album_history.json"));
 
     for artist in get_artists(&artist_list_path) {
-        let albums = &services::spotify::get_artist_albums(&client, &auth_token, &artist).expect(&("Failed to get albums for artist: ".to_owned() + &artist));
+        if artist.len() < 1 {
+            continue;
+        }
+
+        let albums = &services::spotify::get_artist_albums(&client, &auth_token, &artist)
+            .expect(&("Failed to get albums for artist: ".to_owned() + &artist));
 
         // Spotify always returns the albums in desc order of release date
         let latest_album = &albums[0];

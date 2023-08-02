@@ -1,4 +1,4 @@
-from os import system, path, makedirs
+from os import makedirs, path, system
 
 
 def install():
@@ -6,12 +6,15 @@ def install():
     client_secret = input("Your Spotify Client Secret: ")
     artists_file_location = input("Path to artists file: ")
 
-    notifier_bin_folder = path.abspath(path.expanduser("~") + "/.local/bin/album-notifier")
+    notifier_bin_folder = path.abspath(
+        path.expanduser("~") + "/.local/bin/album-notifier"
+    )
     artists_file_path = artists_file_location
 
     setup_notifier_bin(notifier_bin_folder)
     setup_notifier_env(notifier_bin_folder, client_id, client_secret, artists_file_path)
     setup_service("/album-notifier", notifier_bin_folder)
+
 
 def setup_notifier_bin(notifer_bin_folder):
     if not path.exists(notifer_bin_folder):
@@ -19,17 +22,22 @@ def setup_notifier_bin(notifer_bin_folder):
 
     system("cp ./album-notifier " + notifer_bin_folder)
 
+
 def setup_notifier_env(notifer_bin_folder, client_id, client_secret, artists_file_path):
     if not path.exists(notifer_bin_folder):
         makedirs(notifer_bin_folder)
 
-    env_file = open(notifer_bin_folder + '/.env', mode="w")
+    env_file = open(notifer_bin_folder + "/.env", mode="w")
 
     env_file.write(
-"""CLIENT_ID={0}
+        """CLIENT_ID={0}
     CLIENT_SECRET={1}
     ARTIST_LIST_PATH={2}
-""".format(client_id, client_secret, artists_file_path))
+""".format(
+            client_id, client_secret, artists_file_path
+        )
+    )
+
 
 def setup_service(notifier_exec_name, notifier_bin_folder):
     service_path = path.expanduser("~") + "/.config/systemd/user"
@@ -39,7 +47,7 @@ def setup_service(notifier_exec_name, notifier_bin_folder):
     service_file = open(service_path + "/album-notifier.service", mode="w")
 
     service_file.write(
-"""[Unit]
+        """[Unit]
     Description=Album Notifier
     
     [Service]
@@ -49,7 +57,10 @@ def setup_service(notifier_exec_name, notifier_bin_folder):
     
     [Install]
     WantedBy=default.target
-""".format(notifier_bin_folder, notifier_exec_name))
+""".format(
+            notifier_bin_folder, notifier_exec_name
+        )
+    )
     service_file.close()
 
     system("systemctl --user enable album-notifier.service")

@@ -2,8 +2,8 @@ from sys import platform
 from installers import win, linux, osx
 
 if platform == "win32":
-  win.install()
+    win.install()
 elif platform == "darwin":
-  osx.install()
+    osx.install()
 elif "linux" in platform:
     linux.install()
